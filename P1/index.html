@@ -1,0 +1,28 @@
+<!doctype html>
+
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>Alan & Dustin's Webserver</title>
+        <meta name="description" content="Alan & Dustin's Webserver">
+    </head>
+
+    <body>
+        <h1>Alan & Dustin's Webserver</h1>
+        Hello! Welcome to our webserver. 
+        </br>
+        </br>
+        <a href="server">View the files on the server!</a>
+
+
+        <form action="/cgi-bin/formsubmit.py" method = "post">
+            NetID:
+            <input type="text" name="netid"/><br>
+            Message
+            <input type="text" name="message" maxlenght="150"/><br>
+
+            <input type="submit" name="submit" value = "SUBMIT" action="submission.html">
+            <input type="reset" name = "reset" value = "RESET">
+        </form>
+    </body>
+</html>
