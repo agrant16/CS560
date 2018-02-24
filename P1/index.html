@@ -12,17 +12,31 @@
         Hello! Welcome to our webserver. 
         </br>
         </br>
-        <a href="server">View the files on the server!</a>
-
-
-        <form action="/cgi-bin/formsubmit.py" method = "post">
-            NetID:
-            <input type="text" name="netid"/><br>
-            Message
-            <input type="text" name="message" maxlenght="150"/><br>
-
-            <input type="submit" name="submit" value = "SUBMIT" action="submission.html">
-            <input type="reset" name = "reset" value = "RESET">
+        <a href="/server">View the files on the server!</a>
+        </br>
+        </br>
+        <form action="/cgi-bin/formsubmit.cgi" method="GET", id="message">
+            Name: <input type="text" name="name"/> </br>
+            Message: <input type="text" name="message" maxlenght="150"/> </br>
+            <input type="submit" name="submit" value = "SUBMIT">
+            <input type="reset" name="reset" value = "RESET">
         </form>
+        </br>
+        </br>
+        <form action="/cgi-bin/addnums.cgi" method="GET", id="addnums">
+            First Number: <input type="text" name="num1" maxlength="150"/> </br>
+            Operation: 
+            <select name="op">
+                       <option value="add">Add</option>
+                       <option value="sub">Subtract</option>
+                       <option value="div">Divide</option>
+                       <option value="mul">Multiply</option>
+                       <option value="mod">Modulus</option>
+            </select></br>
+            Second Number: <input type="text" name="num2" maxlength="150"/> </br>
+            <input type="submit" name="submit" value = "SUBMIT">
+            <input type="reset" name="reset" value = "RESET">
+        </form>        
+        <a href="server/Images/puppies.jpg"><h3>PUPPIES!!!!!</h3></a>
     </body>
 </html>
