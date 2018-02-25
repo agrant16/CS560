@@ -174,3 +174,72 @@ def handle(self, method, fp, response):
                            format.
         """
         return
+        
+        
+class CS560Server(object):
+    """ Simple socket server which uses CS560Handler to act as a basic HTTP 
+    server.
+    
+    Creates a connection on localhost at the given port and runs the webserver
+    from the current directory.
+    
+    Args:
+        port (int) : The port the server is to listen on.
+    
+    Attributes:
+        host (str) : The hostname the server is running on (we use localost).
+        port (int) : The port the server is to listen on.
+        handler (CS560Handler) : The request handler used to retreive content. 
+    """
+
+
+    def __init__(self, port):
+        self.host = '127.0.0.1'
+        self.port = port
+        self.handler = CS560Handler()
+        
+        
+    def start_server(self):
+        """ Function to start the server running.
+        
+        This function attempts to open a connection with self.port and bind 
+        that connection to (self.host, self.port). If port is successfully 
+        connected to we begin serving content to that port forever. If the 
+        port cannot be connected to, we report this to the user and shutdown 
+        the server. 
+        """
+        return
+            
+        
+    def shutdown(self):
+        """Basic shutdown function to close the open socket."""
+        self.s.shutdown(socket.SHUT_RDWR)
+
+
+    def serve_forever(self):
+        """ Main loop of the socket server.
+        
+        This function provides the main loop for the server. Here we constantly 
+        listen at self.port and wait for a request to come in. When a request is
+        received we collect it and begin the parsing process. 
+        """
+        return
+     
+
+    def parse_request(self, request):
+        """Performs initial request parsing.
+        
+        This function performs initial requesting handling by parsing out the
+        request method and the requested content. Once this is done it spawns a 
+        new Thread to handle the request. This allows for concurrent request 
+        handling. 
+        
+        Args:
+            request (str) : HTTP request in str format.
+            
+        Returns:
+            response (list) : Python list containing the response headers and 
+                              requested content. 
+        """
+        return  
+
