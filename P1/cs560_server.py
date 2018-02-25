@@ -208,7 +208,16 @@ class CS560Server(object):
         port cannot be connected to, we report this to the user and shutdown 
         the server. 
         """
-        return
+        try:
+            print('Starting server on {}...'.format(self.port))
+            self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.s.bind((self.host, self.port))
+            print('Port acquired. Listening...')
+            print('Press CTRL+C to shutdown server.\n')
+            self.serve_forever()
+        except OSError as e:
+            print("Warning: Could not acquire port:", self.port,"\n")
             
         
     def shutdown(self):
@@ -223,7 +232,19 @@ class CS560Server(object):
         listen at self.port and wait for a request to come in. When a request is
         received we collect it and begin the parsing process. 
         """
-        return
+        while True:
+            self.s.listen(5)
+            conn, addr = self.s.accept()
+            message = conn.recv(1024)                        
+            if not message:
+                continue
+            else:
+                request = bytes.decode(message) #receive data from client
+                print(str(request))
+                headers, content = self.parse_request(request)
+                print(bytes.decode(headers))
+                conn.sendall(headers + content)
+                conn.close()
      
 
     def parse_request(self, request):
@@ -241,5 +262,15 @@ class CS560Server(object):
             response (list) : Python list containing the response headers and 
                               requested content. 
         """
-        return  
-
+        request = request.split(' ')
+        method = request[0]
+        if request[1] == '/':
+            f = '/index.html'
+        else:
+            f = request[1]
+        response = []
+        t = threading.Thread(target=self.handler.handle, 
+                             args=(method, f, response))
+        t.start()
+        t.join()
+        return response
