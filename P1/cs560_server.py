@@ -8,7 +8,8 @@ This module contains two classes: CS560Handler and CS560Server. These two
 classes have been implemented as a solution to Programming Assignment 1 for
 COSC 560 - Advanced Operating Systems at the University of Tennesee - Knoxville.
 Combined the two classes create a basic HTTP server capabale of handling GET 
-and HEAD requests. It is capable of serving the following static file types:
+and HEAD requests. It is capable of running basic cgi scripts and of serving 
+the following static file types:
 
     - TEXT FILES
         + HTML
