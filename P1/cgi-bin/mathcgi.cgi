@@ -1,4 +1,11 @@
 #!/usr/bin/python3
+"""
+Names: Alan Grant, Dustin Mcafee
+Class: COSC 560 - Advanced Operating Systems
+Assignment: Programming Assignment 1 - Basic HTTP Server
+
+CGI script to perform a mathematical operation on two nums. 
+"""
 import cgi
 import operator
 import sys

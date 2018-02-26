@@ -1,4 +1,11 @@
 #!/usr/bin/python3
+"""
+Names: Alan Grant, Dustin Mcafee
+Class: COSC 560 - Advanced Operating Systems
+Assignment: Programming Assignment 1 - Basic HTTP Server
+
+CGI script to take submitted form data and append it to server/messages.txt. 
+"""
 import cgi
 import datetime
 import sys
@@ -23,7 +30,8 @@ htmlFormat = """
     <body>
         <h1>MESSAGE SUBMITTED</h1>
         </br>
-        Messages can be viewed in the file <a href="/server/messages.txt">messages.txt</a>.
+        Messages can be viewed in the file messages.txt when viewing the 
+        server contents.
         </br>
         </br>
         <a href="../index.html">Back</a>
