@@ -1,4 +1,14 @@
 MESSAGES FROM USERS
 -------------------
+2018-02-26 16:45
+Name: Alan Grant
+Message: The server works!!! HOORAY!!!!!
 
+2018-02-26 17:14
+Name: Alan Grant
+Message: Accessed from Chrome!!!!!
+
+2018-02-26 17:14
+Name: Alan Grant
+Message: Accessed from Firefox!!!!
 
