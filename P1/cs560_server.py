@@ -20,7 +20,6 @@ the following static file types:
         + GIF
         + JPEG
         + X-ICON
-    
 """
 import cgi
 import http.server
@@ -29,7 +28,7 @@ import pathlib
 import platform
 import socket
 import sys
-import threading
+import _thread
 import time
 
 # Supported static content types
@@ -49,16 +48,60 @@ class CS560Handler(object):
     
     This class is capable of handling the content types listed in the 
     above mimetypes dictionary."""
+ 
     
-    
-    def handle(self, method, fp, response, browser):
+    def handle(self, request):
+        """Performs initial request parsing.
+        
+        This function performs initial requesting handling by parsing out the
+        request method and the requested content.
+        
+        Args:
+            request (str) : HTTP request in str format.
+            
+        Returns:
+            headers (bytes) : The proper headers for the content in bytes format.
+            content (bytes) : The requested content in bytes format. 
+        """
+        req_headers = request.split('\r\n') # split to individual fields
+
+        # Parse the method and the requested content
+        request = req_headers[0].split(' ') 
+        method = request[0].lower()
+        if request[1] == '/':
+            self._go_to_home()
+            f = './index.html'
+        elif request[1] == '/back':
+            cwd = os.getcwd()
+            self._go_to_home()
+            f = '.' + '/'.join(cwd.split('P1')[1].split('/')[:-1])
+            print(f)
+        else:
+            self._go_to_home()
+            f = '.' + request[1]
+            f = f.replace('server/server', 'server')
+        # generate response content
+        headers, content = self._respond(method, f) 
+        return headers, content   
+
+
+    def _go_to_home(self):
+        """ Simple helper function to change the current directory to the 
+        base project directory.
+        """
+        cwd = os.getcwd()
+        new_dir = cwd.split('P1')[0] + 'P1'
+        os.chdir(new_dir)
+        
+            
+    def _respond(self, method, fp):
         """Base handler function for parsing requests and returning the 
         proper content. 
         
         Processes incoming requests and returns proper content. There are three 
         possiblities here:
         
-            1. method=='GET'. The contents of the file and the proper headers 
+            1. method=='GET'. The contents of the file and the proper headers  
                are retrieved.
                
             2. method=='HEAD'. Similar to method=='GET' except that only the 
@@ -70,26 +113,26 @@ class CS560Handler(object):
         Args:
             method (str) : The type of request (GET, HEAD, POST, etc.)
             fp (str) : The file path to the requested content. 
-            response (list) : Used for storing values for use after thread
-                              completion. 
-            browser (str) : The browser being used to access the server.
-        """                      
-        if method == 'GET':
-            headers, content = self.do_GET(fp, browser)
-            response.extend([headers, content])
-        elif method == 'HEAD':
-            headers, content = self.do_GET(fp, browser)
-            response.extend([headers,''])
+            
+        Returns:
+            headers (bytes) : The proper headers for the content in bytes format.
+            content (bytes) : The requested content in bytes format. 
+        """                    
+        if method == 'get':
+            headers, content = self._do_GET(fp)
+        elif method == 'head':
+            headers, content = self._do_GET(fp)
+            content = '' 
         else:
             content = ('<!doctype=html>\n<html>\n\t<body>\n\t\t<h1>Unsupported'
                         ' Request Method</h1>\n\t\t</br></br>\n\t\t<a href="./'
                         'index.html">Back to front page.</a>\n\t</body>\n'
                         '</html>').encode()
-            headers = self.gen_headers(405, os.getsizeof(content), '.html')
-            response.extend([headers, content])
+            headers = self._gen_headers(405, len(content), '.html')
+        return headers, content
+        
 
-
-    def do_GET(self, fp, browser):
+    def _do_GET(self, fp):
         """ Processes GET and HEAD requests.
         
         This function process GET requests and handles those requests 
@@ -99,13 +142,13 @@ class CS560Handler(object):
             1. The requested content is a supported static file. In this case
                the function retrieves the contents of the file. 
                
-            2. The requested content is a directory. Here self.list_dir() is 
+            2. The requested content is a directory. Here self._list_dir() is 
                called to dynamically generate a link page of the contents of 
                the directory. 
                
             3. The request contains a query string. In this case the client has
                submitted a form or performed some other action which requires
-               the execution of a CGI script. self.run_script() is called and 
+               the execution of a CGI script. self._run_script() is called and 
                the page generated by the script is retrieved. 
                
             4. The requested content is not found. A basic html page is created 
@@ -114,7 +157,8 @@ class CS560Handler(object):
         Args:
             fp (str) : The filepath to the requested content. 
             browser (str) : The browser being used to access the server.       
-        
+            opsys (str) : The operating system used by the client.
+                    
         Returns:
             headers (bytes) : The proper headers for the content in bytes format.
             content (bytes) : The requested content in bytes format. 
@@ -122,24 +166,25 @@ class CS560Handler(object):
         content = ''
         ctype = '.html'
         try:
-            fp = '.' + fp
             if '?' in fp: # contains a query string run cgi script
-                content = self.run_script(fp)
+                content = self._run_script(fp)
             elif pathlib.Path(fp).is_file(): # retrieve the contents of the file
                 with open(fp, 'rb') as f:
                     content = f.read()
-                    ctype = pathlib.Path(fp).suffix
+                    ctype = pathlib.Path(fp).suffix # for getting mimetype
             elif pathlib.Path(fp).is_dir(): # request is a directory
-                content = self.list_dir(fp, browser)
-            headers = self.gen_headers(200, sys.getsizeof(content), ctype)
-        except IOError: # Can't open the requested content. 
+                content = self._list_dir(fp)
+            else:
+                raise IOError('File not found.')
+            headers = self._gen_headers(200, len(content), ctype)
+        except IOError as e: # Can't open the requested content.
             content = ('<!doctype=html>\n<html><body><h1>404 File Not Found'
                         '</h1></body></html>').encode()
-            headers = self.gen_headers(404, os.getsizeof(content), ctype)
+            headers = self._gen_headers(404, len(content), ctype)
         return headers, content
  
          
-    def gen_headers(self,  code, length, ctype):
+    def _gen_headers(self, code, length, ctype):
         """ Generates HTTP response headers.
         
         Handles three possible response codes:
@@ -166,27 +211,27 @@ class CS560Handler(object):
         Returns:
             h (bytes) : The headers as a bytes object.
         """
-
         h = 'HTTP/1.1 ' # Every header starts with this. 
         # determine response code
         if (code == 200):
             h += '200 OK\n'
-            h += 'Connection: keep-alive\ns'
+            h += 'Connection: keep-alive\n'
         elif(code == 404):
-            h = '404 Not Found\n'
+            h += '404 Not Found\n'
             h += 'Connection: close\n'
         elif(code == 405):
             h += '405 Unsupported Request Method\n'
             h += 'Connection: close\n'
         h += 'Date: {}\n'.format(time.strftime("%a, %d %b %Y %H:%M:%S", 
                                  time.localtime()))
-        h += 'Content-Type: {}\n'.format(mimetypes.get(ctype))
-        h += ('Server: Alan and Dustin\'s CS560 Server ({})\n\n'
-             .format(platform.platform()))
+        h += ('Server: Alan and Dustin\'s CS560 Server ({})\n'
+              .format(platform.platform()))
+        h += 'Content-Length: {}\n'.format(length)
+        h += 'Content-Type: {}\n\n'.format(mimetypes.get(ctype))
         return h.encode()
       
     
-    def run_script(self, fp):
+    def _run_script(self, fp):
         """Handles running of basic CGI scripts using GET requests.
         
         This function handles running CGI scripts. With a GET request the 
@@ -212,19 +257,15 @@ class CS560Handler(object):
         return content.encode()
   
   
-    def list_dir(self, my_dir, browser):
+    def _list_dir(self, my_dir):
         """Lists the contents of a directory as a simple HTML page.
         
         Creates a basic HTML page listing the contents of the given directory. 
-        A link is created to each item in the directory. Firefox and Chrome 
-        are supported browsers. The building of directory links is handled 
-        differently for each browser because Chrome and Firefox handle 
-        directory links differently. 
-        
+        A link is created to each item in the directory.
+
         Args:
             my_dir (str) : The filepath to the requested directory.
-            browser (str) : The browser being used to access the server.
-                        
+                                    
         Returns:
             content (bytes) : The directory listing as an HTML page in bytes 
                            format.
@@ -238,24 +279,17 @@ class CS560Handler(object):
                        '</html>\n')
                        
         # Store the links in a list for insertion into the unordered list 
-        # on the web page. 
-        ul = ['<li><a href="../">../</a></li>\n']
+        # on the web page.
+        self._go_to_home()
+        back_link = '/'.join(my_dir[2:].split('/')[:-1])
+        if back_link == '':
+            back_link = '/'
+        ul = []
         for e in os.listdir(my_dir):
-            is_d = os.path.isdir(os.path.join(my_dir, e))
-            if is_d:
-                if browser == 'firefox':
-                    ul.append('<li><a href="{0}/{1}/">{2}/</a></li>\n'
-                              .format(my_dir, e, e))
-                elif browser == 'chrome':
-                    ul.append('<li><a href="{0}/">{1}/</a></li>\n'
-                              .format(e, e))                
-            elif my_dir == './server' and not is_d:
-                ul.append('<li><a href="{0}/{1}">{2}</a></li>\n'
-                          .format(my_dir, e, e))
-            else:
-                ul.append('<li><a href="{0}">{1}</a></li>\n'.format(e, e))
+            my_dir1 = my_dir[2:]
+            ul.append('<li><a href="{0}/{1}">{2}</a></li>'.format(my_dir1, e, e))
         # Join the links with a linefeed and carriage return and insert 
-        # them into the webpage.         
+        # them into the webpage. 
         content = dir_listing.format(my_dir[1:], '\n'.join(ul))
         return content.encode()   
         
@@ -278,14 +312,14 @@ class CS560Server(object):
 
 
     def __init__(self, port):
-        self.host = '127.0.0.1'
+        self.host = '0.0.0.0'
         self.port = port
         self.handler = CS560Handler()
         
         
     def start_server(self):
         """ Function to start the server running.
-        
+
         This function attempts to open a connection with self.port and bind 
         that connection to (self.host, self.port). If port is successfully 
         connected to we begin serving content to that port forever. If the 
@@ -299,7 +333,7 @@ class CS560Server(object):
             self.s.bind((self.host, self.port))
             print('Port acquired. Listening...')
             print('Press CTRL+C to shutdown server.\n')
-            self.serve_forever()
+            self._serve_forever()
         except OSError as e:
             print("Warning: Could not acquire port:", self.port,"\n")
             
@@ -309,80 +343,50 @@ class CS560Server(object):
         self.s.shutdown(socket.SHUT_RDWR)
 
 
-    def serve_forever(self):
+    def _threaded_response(self, conn, addr):
+        """This function responds to requests from clients.
+        
+        Creates an instance of CS560Handler to handle HTTP requests from 
+        clients. The function is used as a threaded function so each new
+        client runs on its own thread. 
+        
+        Args:
+            conn : The connection to the socket from client att addr.
+            addr : The address of the client connected to the server.
+        """
+        handler = CS560Handler()
+        while True:
+            try:
+                msg = conn.recv(1024)
+                if msg: 
+                    request = bytes.decode(msg) #receive data from client
+                    print(str(request))
+                    headers, content = handler.handle(request)
+                    print(bytes.decode(headers))
+                    conn.sendall(headers + content)
+                else:
+                    raise error('Connection from {} has been closed.\n'
+                                .format(addr))                       
+            except:
+                conn.close()  
+                return False      
+                
+    
+    def _serve_forever(self):
         """ Main loop of the socket server.
         
         This function provides the main loop for the server. Here we constantly 
-        listen at self.port and wait for a request to come in. When a request is
-        received we collect it and begin the parsing process. 
+        listen at self.port and wait for connections. When a new connection is
+        established that client is given its own thread to process requests.  
         """
         while True:
             self.s.listen(5)
             conn, addr = self.s.accept()
-            message = conn.recv(1024)                        
-            if not message:
-                continue
-            else:
-                request = bytes.decode(message) #receive data from client
-                print(str(request))
-                headers, content = self.parse_request(request)
-                print(bytes.decode(headers))
-                conn.sendall(headers + content)
-                conn.close()
-     
-    def get_browser(self, request):
-        """ Parses the client's browser from the request."
-        
-        Args:
-            request (list) : The request split apart to individual elements.
-        
-        Returns:
-            browser (str) : The browser the client is using. 
-        """
-        for x in request:
-            if x[0] == 'User-Agent:':
-                for y in x:
-                    if 'Chrome' in y:
-                        browser = 'chrome'
-                        break
-                    else:
-                        browser = 'firefox'
-        return browser
-
-
-    def parse_request(self, request):
-        """Performs initial request parsing.
-        
-        This function performs initial requesting handling by parsing out the
-        request method and the requested content. Once this is done it spawns a 
-        new Thread to handle the request. This allows for concurrent request 
-        handling. 
-        
-        Args:
-            request (str) : HTTP request in str format.
+            conn.settimeout(120)
+            print('Connection from {}.\n'.format(addr))
+            _thread.start_new_thread(self._threaded_response,(conn, addr))
             
-        Returns:
-            response (list) : Python list containing the response headers and 
-                              requested content. 
-        """
-        r = request.split('\r\n')
-        request = r[0].split(' ')
-        r2 = [r.split(' ') for r in r]
-        browser = self.get_browser(r2)
-        
-        method = request[0]
-        if request[1] == '/':
-            f = '/index.html'
-        else:
-            f = request[1]
-        response = []
-        t = threading.Thread(target=self.handler.handle, 
-                             args=(method, f, response, browser))
-        t.start()
-        t.join()
-        return response
-        
-        
+            
 # Execute this code if the program is run as an executable.                 
 if __name__ == '__main__':
     port = 8080
