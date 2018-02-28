@@ -312,7 +312,7 @@ class CS560Server(object):
 
 
     def __init__(self, port):
-        self.host = '0.0.0.0'
+        self.host = 'localhost'
         self.port = port
         self.handler = CS560Handler()
         
