@@ -1,2 +1,2 @@
 # CS560
-CS560 assignments
+CS560 programming assignment one. Implement http server using socket programming. 
